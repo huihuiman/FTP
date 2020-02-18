@@ -1,5 +1,5 @@
 '''
-模擬ftp 文件伺服器 用來傳輸下載檔案
+模擬ftp 上傳文件伺服器下載檔案
 '''
 from socket import *
 import os 
@@ -7,22 +7,22 @@ import sys
 import time
 import signal  
 
-#文文件路
+#文件資料路徑
 FILE_PATH = "/home/ubuntu/"
 HOST = '0.0.0.0'
 PORT = 8000
 ADDR = (HOST,PORT)
 
-#將文件服務器功能寫在類中
+#將文件伺服器功能寫在類中
 class FtpServer(object):
     def __init__(self,connfd):
         self.connfd = connfd
 
     def do_list(self):
-        #獲取文件列表清單
+        #獲取文件列表
         file_list = os.listdir(FILE_PATH)
         if not file_list:
-            self.connfd.send("文件庫沒有資料".encode()) 
+            self.connfd.send("文件資料庫為空".encode()) 
             return 
         else:
             self.connfd.send(b'OK')
@@ -42,7 +42,7 @@ class FtpServer(object):
             return 
         self.connfd.send(b'OK')
         time.sleep(0.1)
-        #發送文件   
+        #發送文件
         while True:
             data = fd.read(1024)
             if not data:
@@ -52,7 +52,22 @@ class FtpServer(object):
             self.connfd.send(data)
         print("文件發送完畢")
 
-#創建套接字，接收客戶端連接，創進新的進程
+    def do_put(self,filename):
+        try:
+            fd = open(FILE_PATH + filename,'wb')
+        except:
+            self.connfd.send('伺服器端上傳失敗'.encode())
+            return 
+        self.connfd.send(b'OK')
+        while True:
+            data = self.connfd.recv(1024)
+            if data == b'##':
+                break
+            fd.write(data)
+        fd.close()
+        print("伺服器端上傳完成")
+
+#創建套接字，接收客戶端連接，創建新的進程
 def main():
     sockfd = socket()
     sockfd.setsockopt(SOL_SOCKET,SO_REUSEADDR,1)
@@ -79,7 +94,7 @@ def main():
         if pid == 0:
             sockfd.close()
             ftp = FtpServer(connfd)
-            #判斷客戶端請求
+            #判斷客戶端請求內容
             while True:
                 data = connfd.recv(1024).decode()
                 if not data  or data[0] == 'Q':
@@ -90,6 +105,9 @@ def main():
                 elif data[0] == 'G':
                     filename = data.split(' ')[-1]
                     ftp.do_get(filename)
+                elif data[0] == 'P':
+                    filename = data.split(' ')[-1]
+                    ftp.do_put(filename)
 
         else:
             connfd.close()
