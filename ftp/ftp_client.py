@@ -2,14 +2,12 @@ from socket import *
 import sys 
 import time 
 
-#基本文件操作功能
 class FtpClient(object):
     def __init__(self,sockfd):
         self.sockfd = sockfd 
 
     def do_list(self):
         self.sockfd.send(b'L') #發送請求
-        #等待回覆內容
         data = self.sockfd.recv(1024).decode()
         if data == 'OK':
             data = self.sockfd.recv(4096).decode()
@@ -18,7 +16,6 @@ class FtpClient(object):
                 print(file)
             print("文件列表展示完畢\n")
         else:
-            #由伺服器發送失敗原因
             print(data)
 
 
@@ -62,7 +59,6 @@ class FtpClient(object):
     def do_quit(self):
         self.sockfd.send(b'Q')
 
-#網路連接
 def main():
     if len(sys.argv) < 3:
         print("argv is error")
@@ -70,7 +66,6 @@ def main():
     HOST = sys.argv[1]
     PORT = int(sys.argv[2])
     ADDR = (HOST,PORT)  #文件伺服器地址
-
     sockfd = socket()
 
     try:
@@ -105,7 +100,6 @@ def main():
         else:
             print("請輸入正確命令!")
             continue
-
-    
+   
 if __name__ == "__main__":
     main()
